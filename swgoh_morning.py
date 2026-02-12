@@ -337,7 +337,7 @@ class DailyRoutine:
             time.sleep(0.5)
             
         # Return to home screen
-        self.controller.press_key('esc', times=4, delay=1)
+        self.controller.press_key('esc', times=3, delay=1)
         time.sleep(1)
         
     def step5_light_side_battles(self):
@@ -376,7 +376,7 @@ class DailyRoutine:
             time.sleep(0.5)
             
         # Return to home screen
-        self.controller.press_key('esc', times=4, delay=1)
+        self.controller.press_key('esc', times=3, delay=1)
         time.sleep(1)
         
     def step6_cantina_battles(self):
