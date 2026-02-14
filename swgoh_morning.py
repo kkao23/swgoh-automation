@@ -415,7 +415,7 @@ class DailyRoutine:
             time.sleep(0.5)
             
         # Return to home screen
-        self.controller.press_key('esc', times=3, delay=0.5)
+        self.controller.press_key('esc', times=3, delay=1)
         time.sleep(1)
         
     def run_full_routine(self):

@@ -365,7 +365,7 @@ class EveningRoutine:
         
         # Press esc several times to return to the home screen
         logger.info("Returning to home screen...")
-        self.controller.press_key('esc', times=4, delay=0.5)
+        self.controller.press_key('esc', times=3, delay=0.5)
         
     def step6_claim_energy(self):
         """Step 6: Claim Energy"""
