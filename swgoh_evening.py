@@ -500,6 +500,56 @@ class EveningRoutine:
         logger.info("="*60)
 
 
+def get_evening_step_decisions(controller):
+    """Ask Gemini which optional evening steps can be skipped."""
+    logger.info("Opening quests screen for Gemini pre-check...")
+    controller.press_key('c')
+    time.sleep(1.5)
+
+    prompt = """
+    Analyze this SWGOH home/quests screen and decide if these evening steps should run.
+
+    RULES:
+    1) STEP 1 (Coliseum):
+       - If "Finish 1 Coliseum Battle" already shows a green "Claim" button, mark STEP 1 as SKIP.
+       - Otherwise mark STEP 1 as RUN.
+
+    2) STEP 6 (Claim Energy):
+       - If there is NO green "Claim" button in the lower-left energy area,
+         and a timer is visible for the next free energy handout, mark STEP 6 as SKIP.
+       - Otherwise mark STEP 6 as RUN.
+
+    Respond in EXACT format:
+    STEP1_COLISEUM: RUN or SKIP
+    STEP6_CLAIM_ENERGY: RUN or SKIP
+    NOTES: one short sentence
+    """
+
+    analysis = controller.analyze_screen(prompt)
+    logger.info("Gemini pre-check response:\n%s", analysis)
+
+    logger.info("Closing quests screen after pre-check...")
+    controller.press_key('esc')
+    time.sleep(0.5)
+
+    step1_decision = "RUN"
+    step6_decision = "RUN"
+
+    if analysis:
+        for line in analysis.splitlines():
+            normalized = line.strip().upper()
+            if normalized.startswith("STEP1_COLISEUM") and "SKIP" in normalized:
+                step1_decision = "SKIP"
+            if normalized.startswith("STEP6_CLAIM_ENERGY") and "SKIP" in normalized:
+                step6_decision = "SKIP"
+
+    return {
+        1: step1_decision,
+        6: step6_decision,
+        "raw": analysis,
+    }
+
+
 def main():
     """Main entry point with multi-step support"""
     
@@ -600,10 +650,56 @@ def main():
             logger.error("Could not find SWGOH window. Is the game open?")
             return
             
-        # Run routine
+        # Run routine with AI-based optional step skip logic
         routine = EveningRoutine(controller)
-        routine.run_full_routine()
-        
+        steps = [
+            routine.step1_coliseum,
+            routine.step2_claim_quests,
+            routine.step3_galactic_war,
+            routine.step4_challenges,
+            routine.step5_fleet_challenge,
+            routine.step6_claim_energy,
+            routine.step7_fleet_battles,
+            routine.step8_light_side_battles,
+        ]
+
+        decisions = get_evening_step_decisions(controller)
+        logger.info(
+            "AI decisions -> Step 1: %s, Step 6: %s",
+            decisions[1],
+            decisions[6],
+        )
+
+        step_nums_to_run = [1, 2, 3, 4, 5, 6, 7, 8]
+        if decisions[1] == "SKIP":
+            logger.info("Skipping Step 1 (Coliseum) based on AI pre-check.")
+            step_nums_to_run.remove(1)
+        if decisions[6] == "SKIP":
+            logger.info("Skipping Step 6 (Claim Energy) based on AI pre-check.")
+            step_nums_to_run.remove(6)
+
+        logger.info("Running evening steps: %s", step_nums_to_run)
+        for i, step_num in enumerate(step_nums_to_run, 1):
+            try:
+                logger.info(
+                    "\n--- Executing Step %d/%d (Step %d) ---",
+                    i,
+                    len(step_nums_to_run),
+                    step_num,
+                )
+                steps[step_num - 1]()
+                time.sleep(1)
+            except Exception as e:
+                logger.error(f"Step {step_num} failed: {e}")
+                try:
+                    controller.press_key('esc', times=5, delay=0.3)
+                except:
+                    pass
+
+        logger.info("\n" + "="*60)
+        logger.info("EVENING ROUTINE COMPLETED")
+        logger.info("="*60)
+
     except KeyboardInterrupt:
         print("\nCancelled by user")
     except Exception as e:
