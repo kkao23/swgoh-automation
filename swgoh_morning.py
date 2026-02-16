@@ -252,9 +252,34 @@ class DailyRoutine:
         self.controller.press_key('c')
         time.sleep(2)
         
-        logger.info("Clicking at (0.25, 0.95)...")
-        self.controller.click_at(0.25, 0.95, "Claim Energy step 3")
-        time.sleep(1)
+        analysis = self.controller.analyze_screen("""
+        Look at the lower-left free energy area on this SWGOH quests screen.
+
+        Decide if we should click the free energy claim location now.
+        - If a green "Claim" button is visible there, set decision to CLICK.
+        - If there is no green claim button and a countdown timer is shown
+          until next free energy, set decision to SKIP.
+
+        Respond in EXACT format:
+        DECISION: CLICK or SKIP
+        NOTES: one short sentence
+        """)
+        logger.info("Step 1 energy pre-check response:\n%s", analysis)
+
+        should_click = False
+        if analysis:
+            for line in analysis.splitlines():
+                normalized = line.strip().upper()
+                if normalized.startswith("DECISION:"):
+                    should_click = "CLICK" in normalized and "SKIP" not in normalized
+                    break
+
+        if should_click:
+            logger.info("Energy claim available - clicking at (0.25, 0.95)...")
+            self.controller.click_at(0.25, 0.95, "Claim Energy step 3")
+            time.sleep(1)
+        else:
+            logger.info("No claim button found (likely timer shown) - skipping energy claim click.")
             
         # Return to home screen
         self.controller.press_key('esc', times=1, delay=0.5)
